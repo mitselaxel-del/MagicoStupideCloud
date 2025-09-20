@@ -421,187 +421,6 @@ function Kavo.CreateLib(kavName, themeList)
     headerCover.Name = "headerCover"
     headerCover.Parent = MainHeader
 
-
-    -- /* COSMETIC V3 - Neon Rayfield-like UI (NON-DESTRUCTIVE) */
-    pcall(function()
-        -- Safety checks: Main, MainHeader, MainSide, tabFrames should exist in original layout
-        if not Main then return end
-
-        -- Neon palette
-        local neonAccent = Color3.fromRGB(0, 255, 217) -- cyan
-        local neonAccent2 = Color3.fromRGB(186, 85, 255) -- purple
-        local bgMain = Color3.fromRGB(12, 12, 20)
-        local panel = Color3.fromRGB(18, 18, 28)
-        local subtle = Color3.fromRGB(34, 34, 46)
-        local textColor = Color3.fromRGB(230, 240, 250)
-
-        -- Apply background/main colors safely
-        pcall(function() Main.BackgroundColor3 = bgMain end)
-        pcall(function() if MainHeader then MainHeader.BackgroundColor3 = panel end end)
-        pcall(function() if MainSide then MainSide.BackgroundColor3 = Color3.new(0,0,0) end end)
-
-        -- Reorder layout: ensure Side is left and Pages on right (non-destructive reposition)
-        pcall(function()
-            if MainSide then
-                MainSide.Size = UDim2.new(0, 220, 1, 0)
-                MainSide.Position = UDim2.new(0, 0, 0, 48)
-            end
-            if Pages then
-                Pages.Position = UDim2.new(0, 220, 0, 48)
-                Pages.Size = UDim2.new(1, -220, 1, -48)
-            end
-        end)
-
-        -- Create neon accent bar under header if not exists
-        if Main and not Main:FindFirstChild("NeonAccentBar") then
-            local accent = Instance.new("Frame")
-            accent.Name = "NeonAccentBar"
-            accent.Size = UDim2.new(1, 0, 0, 6)
-            accent.Position = UDim2.new(0, 0, 0, 48)
-            accent.BorderSizePixel = 0
-            accent.BackgroundColor3 = neonAccent
-            accent.Parent = Main
-
-            local aCorner = Instance.new("UICorner", accent)
-            aCorner.CornerRadius = UDim.new(0, 6)
-        end
-
-        -- Header title styling
-        pcall(function()
-            if TitleLabel then
-                TitleLabel.TextColor3 = textColor
-                TitleLabel.Font = Enum.Font.GothamBold
-                TitleLabel.TextSize = 20
-            end
-        end)
-
-        -- Apply neon glow on tab buttons (tabFrames variable to support original names)
-        pcall(function()
-            local tabsContainer = MainSide or tabFrames or nil
-            if tabsContainer then
-                for _, child in ipairs(tabsContainer:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        -- background
-                        child.BackgroundTransparency = 0
-                        child.BackgroundColor3 = subtle
-                        child.TextColor3 = textColor
-                        child.Font = Enum.Font.GothamSemibold
-
-                        -- border and gradient
-                        if not child:FindFirstChild("NeonGrad") then
-                            local grad = Instance.new("UIGradient")
-                            grad.Name = "NeonGrad"
-                            grad.Rotation = 270
-                            grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, neonAccent2), ColorSequenceKeypoint.new(1, neonAccent)}
-                            grad.Parent = child
-                        end
-                        if not child:FindFirstChild("NeonStroke") then
-                            local stroke = Instance.new("UIStroke", child)
-                            stroke.Name = "NeonStroke"
-                            stroke.Color = neonAccent
-                            stroke.Thickness = 1
-                            stroke.Transparency = 0.5
-                        end
-                    end
-                end
-            end
-        end)
-
-        -- Button click sound: using provided asset id "15675059323"
-        pcall(function()
-            local clickId = "rbxassetid://15675059323"
-            -- Attach sound to Main for reuse
-            if Main and not Main:FindFirstChild("Kavo_ClickSound") then
-                local s = Instance.new("Sound")
-                s.Name = "Kavo_ClickSound"
-                s.SoundId = clickId
-                s.Volume = 1
-                s.Parent = Main
-            end
-            -- Wrap existing button connectors to play sound on click (non-destructive: adds additional connection)
-            local function bindSoundToButton(btn)
-                if not btn or not btn:IsA("TextButton") then return end
-                if btn:GetAttribute("KavoSoundBound") then return end
-                btn:SetAttribute("KavoSoundBound", true)
-                btn.MouseButton1Click:Connect(function()
-                    pcall(function()
-                        local s = Main:FindFirstChild("Kavo_ClickSound")
-                        if s then s:Play() end
-                    end)
-                end)
-            end
-            -- iterate through existing side tabs and pages buttons
-            local possibleParents = {MainSide, Pages}
-            for _, parent in ipairs(possibleParents) do
-                if parent then
-                    for _, v in ipairs(parent:GetDescendants()) do
-                        if v:IsA("TextButton") then bindSoundToButton(v) end
-                    end
-                end
-            end
-        end)
-
-        -- Rainbow animated gradient on NeonAccentBar (uses RunService; store connection non-destructively)
-        pcall(function()
-            local accent = Main:FindFirstChild("NeonAccentBar")
-            if accent then
-                if not accent:FindFirstChild("Kavo_Rainbow") then
-                    local grad = Instance.new("UIGradient")
-                    grad.Name = "Kavo_Rainbow"
-                    grad.Rotation = 0
-                    grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, neonAccent), ColorSequenceKeypoint.new(1, neonAccent2)}
-                    grad.Parent = accent
-
-                    -- animated Hue shift; store connection under ScreenGui to allow cleanup if needed
-                    local sg = Main:FindFirstAncestorWhichIsA("ScreenGui") or Main.Parent
-                    if sg and not sg:FindFirstChild("Kavo_RainbowRun") then
-                        local runConn = Instance.new("BindableEvent")
-                        runConn.Name = "Kavo_RainbowRun"
-                        runConn.Parent = sg
-
-                        -- Use RunService to update gradient color
-                        local t = 0
-                        local conn = game:GetService("RunService").Heartbeat:Connect(function(dt)
-                            t = t + dt * 0.25 -- speed
-                            local hue1 = (t % 1)
-                            local hue2 = ((t + 0.15) % 1)
-                            local c1 = Color3.fromHSV(hue1, 0.9, 1)
-                            local c2 = Color3.fromHSV(hue2, 0.85, 1)
-                            if grad and grad.Parent then
-                                grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, c1), ColorSequenceKeypoint.new(1, c2)}
-                            else
-                                conn:Disconnect()
-                            end
-                        end)
-                        -- store for potential cleanup reference
-                        local meta = Instance.new("StringValue")
-                        meta.Name = "Kavo_RainbowConnInfo"
-                        meta.Value = "active"
-                        meta.Parent = sg
-                    end
-                end
-            end
-        end)
-
-        -- Slightly enlarge main when hovered to create a "panel pop" effect (non-invasive)
-        pcall(function()
-            if Main then
-                if not Main:GetAttribute("KavoHoverBound") then
-                    Main:SetAttribute("KavoHoverBound", true)
-                    local orig = Main.Size
-                    Main.MouseEnter:Connect(function()
-                        pcall(function() tweenSize(Main, UDim2.new(orig.X.Scale, orig.X.Offset+8, orig.Y.Scale, orig.Y.Offset+8), 0.15) end)
-                    end)
-                    Main.MouseLeave:Connect(function()
-                        pcall(function() tweenSize(Main, orig, 0.15) end)
-                    end)
-                end
-            end
-        end)
-
-    end)
-    -- /* END COSMETIC V3 */
-
     coverup.Name = "coverup"
     coverup.Parent = MainHeader
     coverup.BackgroundColor3 = themeList.Header
@@ -2998,3 +2817,67 @@ function Kavo.CreateLib(kavName, themeList)
     return Tabs
 end
 return Kavo
+
+
+
+-- // 🎮 Gamer Style Addon 🎮
+pcall(function()
+    local RunService = game:GetService("RunService")
+    local SoundService = game:GetService("SoundService")
+
+    -- Rainbow effect para el SchemeColor (neón dinámico)
+    spawn(function()
+        local t = 0
+        while task.wait() do
+            t = tick() * 75
+            local r = math.sin(t/100) * 127 + 128
+            local g = math.sin(t/100 + 2) * 127 + 128
+            local b = math.sin(t/100 + 4) * 127 + 128
+            if Main and Main:FindFirstChild("Header") then
+                Main.Header.BackgroundColor3 = Color3.fromRGB(r, g, b)
+            end
+            if Main and Main:FindFirstChild("Side") then
+                Main.Side.BackgroundColor3 = Color3.fromRGB(b, r, g)
+            end
+        end
+    end)
+
+    -- Sonido gamer al clickear
+    local clickSoundId = "rbxassetid://15675059323"
+
+    local function applyClickSound(obj)
+        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+            obj.MouseButton1Click:Connect(function()
+                local sound = Instance.new("Sound")
+                sound.SoundId = clickSoundId
+                sound.Volume = 1
+                sound.Parent = SoundService
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 2)
+            end)
+        elseif obj:IsA("TextBox") then
+            obj.Focused:Connect(function()
+                local sound = Instance.new("Sound")
+                sound.SoundId = clickSoundId
+                sound.Volume = 1
+                sound.Parent = SoundService
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 2)
+            end)
+        end
+    end
+
+    -- Aplicar sonidos a los objetos iniciales y futuros
+    local function applyToDescendants(parent)
+        for _, obj in ipairs(parent:GetDescendants()) do
+            applyClickSound(obj)
+        end
+        parent.DescendantAdded:Connect(function(obj)
+            applyClickSound(obj)
+        end)
+    end
+
+    if Main then
+        applyToDescendants(Main)
+    end
+end)
