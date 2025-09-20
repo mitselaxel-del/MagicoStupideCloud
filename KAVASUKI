@@ -421,6 +421,70 @@ function Kavo.CreateLib(kavName, themeList)
     headerCover.Name = "headerCover"
     headerCover.Parent = MainHeader
 
+
+    -- /* Cosmetic UI tweaks — modern accents (non-destructive, wrapped in pcall) */
+    pcall(function()
+        if not Main then return end
+        -- subtle outline for main window
+        if not Main:FindFirstChild("Kavo_UIStroke") then
+            local uiStroke = Instance.new("UIStroke")
+            uiStroke.Name = "Kavo_UIStroke"
+            uiStroke.Thickness = 1
+            uiStroke.LineJoinMode = Enum.LineJoinMode.Round
+            uiStroke.Color = (themeList.SchemeColor or Color3.fromRGB(74,99,135))
+            uiStroke.Transparency = 0.45
+            uiStroke.Parent = Main
+        end
+
+        -- header gradient/shine
+        if MainHeader and not MainHeader:FindFirstChild("Kavo_HeaderGradient") then
+            local g = Instance.new("UIGradient")
+            g.Name = "Kavo_HeaderGradient"
+            local sc = themeList.SchemeColor or Color3.fromRGB(74,99,135)
+            local hd = themeList.Header or Color3.fromRGB(28,29,34)
+            g.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, sc), ColorSequenceKeypoint.new(1, hd)}
+            g.Rotation = 90
+            g.Parent = MainHeader
+        end
+
+        -- soft drop shadow (non-intrusive)
+        if not Main:FindFirstChild("Kavo_DropShadow") then
+            local shadow = Instance.new("ImageLabel")
+            shadow.Name = "Kavo_DropShadow"
+            shadow.Image = "rbxassetid://1316045217"
+            shadow.BackgroundTransparency = 1
+            shadow.Size = UDim2.new(1, 20, 1, 20)
+            shadow.Position = UDim2.new(0, -10, 0, -10)
+            shadow.ZIndex = 0
+            shadow.ImageColor3 = Color3.new(0,0,0)
+            shadow.ImageTransparency = 0.75
+            shadow.ScaleType = Enum.ScaleType.Slice
+            shadow.SliceCenter = Rect.new(10,10,118,118)
+            shadow.Parent = Main
+        end
+
+        -- subtle rounded accents for side panel
+        if MainSide and not MainSide:FindFirstChild("Kavo_SideStroke") then
+            local sstroke = Instance.new("UIStroke")
+            sstroke.Name = "Kavo_SideStroke"
+            sstroke.Color = (themeList.SchemeColor or Color3.fromRGB(74,99,135))
+            sstroke.Transparency = 0.6
+            sstroke.Thickness = 1
+            sstroke.Parent = MainSide
+        end
+
+        -- add faint UIGradient for tab buttons if missing (safe)
+        for i,v in ipairs(tabFrames:GetChildren()) do
+            if v:IsA('TextButton') and not v:FindFirstChild('Kavo_TabGrad') then
+                local grad = Instance.new('UIGradient')
+                grad.Name = 'Kavo_TabGrad'
+                grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, (themeList.SchemeColor or Color3.fromRGB(74,99,135))*0.85), ColorSequenceKeypoint.new(1, themeList.Header or Color3.fromRGB(28,29,34))}
+                grad.Rotation = 270
+                grad.Parent = v
+            end
+        end
+    end)
+
     coverup.Name = "coverup"
     coverup.Parent = MainHeader
     coverup.BackgroundColor3 = themeList.Header
